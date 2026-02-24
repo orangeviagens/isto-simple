@@ -25,8 +25,8 @@ const IntegrationsSettingsPage = () => {
       status: 'connected',
       lastSync: 'Há 2 minutos',
       config: {
-        phoneNumberId: '964499346753766',
-        businessAccountId: '1669016544285728',
+        phoneNumberId: '1025591183969414',
+        businessAccountId: '1358706386274992',
         appId: '771239678944172',
         webhookUrl: 'https://xdbveregzbkmqswfyvmn.supabase.co/functions/v1/whatsapp-webhook',
         verifyToken: 'orange-messenger-verify-2026',
