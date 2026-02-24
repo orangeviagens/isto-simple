@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Paperclip, Smile, Mic, Zap, StickyNote, ArrowDown, UserPlus, ArrowRightLeft, X, Bot } from 'lucide-react';
 import { Conversation, Message, LEAD_STATUS_LABELS, LeadStatus } from '@/types';
 import { agents, quickReplies } from '@/data/mockData';
@@ -28,13 +28,17 @@ export function ChatArea({ conversation, onToggleContactPanel, onSendMessage, se
   const [sendError, setSendError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isSendingRef = useRef(false); // Ref-based guard to prevent duplicate sends
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversation.messages]);
 
-  const handleSend = async () => {
-    if (!message.trim() || sending) return;
+  const handleSend = useCallback(async () => {
+    // Use ref guard (synchronous) to prevent duplicate sends before React re-renders
+    if (!message.trim() || sending || isSendingRef.current) return;
+    isSendingRef.current = true;
+
     const content = message.trim();
     setMessage('');
     setIsNoteMode(false);
@@ -49,7 +53,9 @@ export function ChatArea({ conversation, onToggleContactPanel, onSendMessage, se
         setMessage(content); // Restore message on error
       }
     }
-  };
+
+    isSendingRef.current = false;
+  }, [message, sending, isNoteMode, onSendMessage, conversation.contact.phone]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {

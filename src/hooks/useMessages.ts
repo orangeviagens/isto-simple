@@ -44,6 +44,7 @@ export function useMessages(conversationId: string | null) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const currentConvRef = useRef(conversationId);
+  const sendingRef = useRef(false); // Synchronous guard against duplicate sends
 
   // Keep ref in sync
   useEffect(() => {
@@ -117,6 +118,10 @@ export function useMessages(conversationId: string | null) {
     async (content: string, contactPhone: string, senderName?: string) => {
       if (!conversationId || !content.trim()) return;
 
+      // Synchronous ref guard — prevents duplicate sends before React re-renders
+      if (sendingRef.current) return;
+      sendingRef.current = true;
+
       setSending(true);
       setError(null);
 
@@ -163,6 +168,7 @@ export function useMessages(conversationId: string | null) {
         throw err;
       } finally {
         setSending(false);
+        sendingRef.current = false;
       }
     },
     [conversationId]
