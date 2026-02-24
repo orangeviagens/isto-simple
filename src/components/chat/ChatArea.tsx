@@ -7,6 +7,8 @@ import { ChatBubble } from './ChatBubble';
 interface Props {
   conversation: Conversation;
   onToggleContactPanel: () => void;
+  onSendMessage?: (content: string, contactPhone: string, senderName?: string) => Promise<any>;
+  sending?: boolean;
 }
 
 const leadColors: Record<LeadStatus, string> = {
@@ -18,11 +20,12 @@ const leadColors: Record<LeadStatus, string> = {
   lost: 'bg-lead-lost/15 text-lead-lost',
 };
 
-export function ChatArea({ conversation, onToggleContactPanel }: Props) {
+export function ChatArea({ conversation, onToggleContactPanel, onSendMessage, sending }: Props) {
   const [message, setMessage] = useState('');
   const [isNoteMode, setIsNoteMode] = useState(false);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -30,11 +33,22 @@ export function ChatArea({ conversation, onToggleContactPanel }: Props) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversation.messages]);
 
-  const handleSend = () => {
-    if (!message.trim()) return;
+  const handleSend = async () => {
+    if (!message.trim() || sending) return;
+    const content = message.trim();
     setMessage('');
     setIsNoteMode(false);
     setShowAiSuggestion(false);
+    setSendError(null);
+
+    if (onSendMessage && !isNoteMode) {
+      try {
+        await onSendMessage(content, conversation.contact.phone);
+      } catch (err) {
+        setSendError(err instanceof Error ? err.message : 'Erro ao enviar');
+        setMessage(content); // Restore message on error
+      }
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -210,10 +224,22 @@ export function ChatArea({ conversation, onToggleContactPanel }: Props) {
         <button className="flex-shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground">
           <Mic className="h-5 w-5" />
         </button>
-        <button onClick={handleSend} className="flex-shrink-0 rounded-lg bg-primary p-2.5 text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors">
-          <Send className="h-4 w-4" />
+        <button onClick={handleSend} disabled={sending || !message.trim()} className={`flex-shrink-0 rounded-lg p-2.5 text-primary-foreground shadow-sm transition-colors ${sending || !message.trim() ? 'bg-primary/50 cursor-not-allowed' : 'bg-primary hover:bg-primary/90'}`}>
+          {sending ? (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
         </button>
       </div>
+
+      {/* Error banner */}
+      {sendError && (
+        <div className="flex items-center justify-between bg-destructive/10 px-4 py-2 text-xs text-destructive">
+          <span>{sendError}</span>
+          <button onClick={() => setSendError(null)} className="ml-2 font-medium hover:underline">Fechar</button>
+        </div>
+      )}
     </div>
   );
 }

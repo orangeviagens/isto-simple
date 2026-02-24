@@ -15,7 +15,7 @@ const ChatPage = () => {
   const [filter, setFilter] = useState<'all' | 'mine' | 'unassigned' | 'bot'>('all');
 
   // Load messages for selected conversation
-  const { messages } = useMessages(selectedConversation?.id ?? null);
+  const { messages, sendMessage, sending } = useMessages(selectedConversation?.id ?? null);
 
   // Auto-select first conversation when loaded
   useEffect(() => {
@@ -65,6 +65,8 @@ const ChatPage = () => {
         <ChatArea
           conversation={enrichedConversation}
           onToggleContactPanel={() => setShowContactPanel(!showContactPanel)}
+          onSendMessage={sendMessage}
+          sending={sending}
         />
       ) : (
         <div className="flex flex-1 items-center justify-center bg-muted/30">
