@@ -12,16 +12,18 @@ export interface LoginCredentials {
   password: string;
 }
 
+export type AuthStateCallback = (session: AuthSession | null) => void;
+
 export interface AuthSession {
   user: AuthUser;
   accessToken: string;
   refreshToken?: string;
-  expiresAt: number;
+  expiresAt: number | string;
 }
 
 export interface AuthService {
   /** Sign in with email/password */
-  login(credentials: LoginCredentials): Promise<AuthSession>;
+  login(email: string, password: string): Promise<AuthSession>;
 
   /** Sign out the current user */
   logout(): Promise<void>;

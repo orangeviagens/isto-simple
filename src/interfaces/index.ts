@@ -7,7 +7,7 @@
 // on concrete implementations.
 // ============================================================
 
-export type { AuthService, AuthUser, AuthSession, LoginCredentials } from './AuthService';
+export type { AuthService, AuthUser, AuthSession, LoginCredentials, AuthStateCallback } from './AuthService';
 export type { RealtimeService, RealtimeEvent, RealtimePayload, RealtimeCallback } from './RealtimeService';
 export type { CacheService } from './CacheService';
 export type { MessageQueue, QueueMessage } from './MessageQueue';
