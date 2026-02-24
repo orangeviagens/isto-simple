@@ -35,6 +35,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (existingSession) {
           const agentProfile = await container.auth.getCurrentAgent();
           setAgent(agentProfile);
+          // Connect realtime when session exists
+          await container.realtime.connect();
         }
       } catch (err) {
         console.error('[Auth] Failed to restore session:', err);
@@ -51,7 +53,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (newSession) {
         const agentProfile = await container.auth.getCurrentAgent();
         setAgent(agentProfile);
+        await container.realtime.connect();
       } else {
+        await container.realtime.disconnect();
         setAgent(null);
       }
     });
@@ -64,9 +68,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(newSession);
     const agentProfile = await container.auth.getCurrentAgent();
     setAgent(agentProfile);
+    await container.realtime.connect();
   };
 
   const logout = async () => {
+    await container.realtime.disconnect();
     await container.auth.logout();
     setSession(null);
     setAgent(null);
