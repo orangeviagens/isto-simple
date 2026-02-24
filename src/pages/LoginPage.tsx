@@ -1,16 +1,37 @@
 import { useState } from 'react';
-import { Eye, EyeOff, Plane } from 'lucide-react';
+import { Eye, EyeOff, Plane, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/');
+    setError('');
+    setIsLoading(true);
+
+    try {
+      await login(email, password);
+      navigate('/');
+    } catch (err) {
+      console.error('[Login] Failed:', err);
+      setError(
+        err instanceof Error
+          ? err.message.includes('Invalid login')
+            ? 'Email ou senha incorretos'
+            : err.message
+          : 'Erro ao fazer login'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -25,6 +46,12 @@ const LoginPage = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-6 shadow-sm">
+          {error && (
+            <div className="mb-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+
           <div className="space-y-4">
             <div>
               <label className="mb-1.5 block text-xs font-medium text-foreground">Email</label>
@@ -33,7 +60,9 @@ const LoginPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
-                className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                required
+                disabled={isLoading}
+                className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
               />
             </div>
             <div>
@@ -44,7 +73,9 @@ const LoginPage = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  required
+                  disabled={isLoading}
+                  className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2.5 pr-10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
                 />
                 <button
                   type="button"
@@ -59,9 +90,17 @@ const LoginPage = () => {
 
           <button
             type="submit"
-            className="mt-6 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+            disabled={isLoading}
+            className="mt-6 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            Entrar
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Entrando...
+              </>
+            ) : (
+              'Entrar'
+            )}
           </button>
 
           <button type="button" className="mt-3 w-full text-center text-xs text-primary hover:underline">

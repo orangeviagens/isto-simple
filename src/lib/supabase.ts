@@ -6,17 +6,17 @@
 
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
-import { env } from '@/config/env';
+import { config } from '@/config/env';
 
-if (!env.supabase.url || !env.supabase.anonKey) {
+if (!config.supabase.url || !config.supabase.anonKey) {
   throw new Error(
     'Missing Supabase credentials. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env'
   );
 }
 
 export const supabase = createClient<Database>(
-  env.supabase.url,
-  env.supabase.anonKey,
+  config.supabase.url,
+  config.supabase.anonKey,
   {
     auth: {
       autoRefreshToken: true,
