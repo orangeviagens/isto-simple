@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, MessageSquare, User, Users, Bot, Settings, ChevronDown } from 'lucide-react';
 import { Conversation, AgentStatus } from '@/types';
 import { currentAgent } from '@/data/mockData';
@@ -23,6 +24,7 @@ const statusColors: Record<AgentStatus, string> = {
 };
 
 export function ConversationSidebar({ conversations, selectedId, onSelect, filter, onFilterChange, allCount, mineCount, unassignedCount, botCount }: Props) {
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [agentStatus, setAgentStatus] = useState<AgentStatus>(currentAgent.status);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
@@ -138,7 +140,7 @@ export function ConversationSidebar({ conversations, selectedId, onSelect, filte
               )}
             </div>
           </div>
-          <button className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground">
+          <button onClick={() => navigate('/settings')} className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground" title="Configurações">
             <Settings className="h-4 w-4" />
           </button>
         </div>
