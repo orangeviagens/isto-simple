@@ -9,6 +9,13 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import NotFound from "./pages/NotFound";
 
+// Settings pages
+import SettingsLayout from "./pages/settings/SettingsLayout";
+import GeneralSettingsPage from "./pages/settings/GeneralSettingsPage";
+import TeamSettingsPage from "./pages/settings/TeamSettingsPage";
+import AISettingsPage from "./pages/settings/AISettingsPage";
+import IntegrationsSettingsPage from "./pages/settings/IntegrationsSettingsPage";
+
 const queryClient = new QueryClient();
 
 /** Protects routes — redirects to /login if not authenticated */
@@ -54,6 +61,15 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
             <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+
+            {/* Settings routes with nested layout */}
+            <Route path="/settings" element={<ProtectedRoute><SettingsLayout /></ProtectedRoute>}>
+              <Route index element={<GeneralSettingsPage />} />
+              <Route path="team" element={<TeamSettingsPage />} />
+              <Route path="ai" element={<AISettingsPage />} />
+              <Route path="integrations" element={<IntegrationsSettingsPage />} />
+            </Route>
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
