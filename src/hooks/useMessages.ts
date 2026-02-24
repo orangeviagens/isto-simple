@@ -5,18 +5,52 @@
 // new messages in realtime. Sends messages via Edge Function.
 // ============================================================
 
-import { useState, useEffect, useCallback } from 'react';
-import type { Message } from '@/types';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import type { Message, MessageSender, MessageType } from '@/types';
 import container from '@/container';
 import { supabase } from '@/lib/supabase';
 import { config } from '@/config/env';
+
+/** Map DB sender_type to app's MessageSender */
+function mapSenderType(dbType: string): MessageSender {
+  const map: Record<string, MessageSender> = {
+    customer: 'client',
+    agent: 'agent',
+    bot: 'bot',
+    system: 'system',
+  };
+  return map[dbType] ?? 'system';
+}
+
+/** Convert a realtime payload (DB row) into a Message object */
+function realtimeRowToMessage(row: Record<string, unknown>): Message {
+  return {
+    id: row.id as string,
+    conversationId: row.conversation_id as string,
+    sender: mapSenderType(row.sender_type as string),
+    content: row.content as string,
+    timestamp: row.created_at as string,
+    status: row.status === 'pending' || row.status === 'failed'
+      ? undefined
+      : (row.status as Message['status']),
+    type: (row.content_type as MessageType) ?? 'text',
+    fileName: (row.metadata as Record<string, unknown>)?.fileName as string | undefined,
+  };
+}
 
 export function useMessages(conversationId: string | null) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const currentConvRef = useRef(conversationId);
 
+  // Keep ref in sync
+  useEffect(() => {
+    currentConvRef.current = conversationId;
+  }, [conversationId]);
+
+  // Initial load — only when conversationId changes
   const fetchMessages = useCallback(async () => {
     if (!conversationId) {
       setMessages([]);
@@ -36,21 +70,48 @@ export function useMessages(conversationId: string | null) {
     }
   }, [conversationId]);
 
+  // Load messages on conversation change
   useEffect(() => {
     fetchMessages();
+  }, [fetchMessages]);
 
+  // Realtime subscription — append new messages, update status
+  useEffect(() => {
     if (!conversationId) return;
 
-    // Subscribe to new messages for this conversation
     const unsubscribe = container.realtime.subscribeToConversation(
       conversationId,
-      () => {
-        fetchMessages();
+      (payload) => {
+        // Only handle events for the current conversation
+        if (currentConvRef.current !== conversationId) return;
+
+        const data = payload.data as Record<string, unknown>;
+        if (!data) return;
+
+        if (payload.event === 'message:new') {
+          const newMessage = realtimeRowToMessage(data);
+
+          // Avoid duplicates (check by id)
+          setMessages(prev => {
+            if (prev.some(m => m.id === newMessage.id)) return prev;
+            return [...prev, newMessage];
+          });
+        } else if (payload.event === 'message:status') {
+          // Update only the status of the specific message
+          const messageId = data.id as string;
+          const newStatus = data.status as Message['status'];
+          setMessages(prev =>
+            prev.map(m =>
+              m.id === messageId ? { ...m, status: newStatus } : m
+            )
+          );
+        }
+        // Ignore conversation:updated, typing events — they don't affect messages
       }
     );
 
     return unsubscribe;
-  }, [conversationId, fetchMessages]);
+  }, [conversationId]);
 
   const sendMessage = useCallback(
     async (content: string, contactPhone: string, senderName?: string) => {
@@ -92,9 +153,8 @@ export function useMessages(conversationId: string | null) {
           throw new Error(result.error || 'Erro ao enviar mensagem');
         }
 
-        // Refetch messages to get the saved message from DB
-        await fetchMessages();
-
+        // The realtime subscription will handle adding the message to state
+        // No need to refetch all messages
         return result.message as Message;
       } catch (err) {
         console.error('[useMessages] Send failed:', err);
@@ -105,7 +165,7 @@ export function useMessages(conversationId: string | null) {
         setSending(false);
       }
     },
-    [conversationId, fetchMessages]
+    [conversationId]
   );
 
   return { messages, loading, sending, error, sendMessage, refetch: fetchMessages };
